@@ -21,10 +21,11 @@ const UI = {
     charCount: document.getElementById("char-count"),
     error: document.getElementById("prompt-error"),
     loader: document.getElementById("btn-generate-loader"),
-    btnText: document.getElementById("btn-generate-text"),
+    btnGenerateText: document.getElementById("btn-generate-text"),
     fileInput: document.getElementById("input-image"),
     btnUploadImage: document.getElementById("btn-upload-image"),
     imageName: document.getElementById("image-name"),
+    btnThemeToggle: document.getElementById("btn-theme-toggle"),
   },
   table: {
     head: document.getElementById("table-head"),
@@ -45,10 +46,12 @@ const UI = {
     btnAiChatLoader: document.getElementById("btn-ai-chat-loader"),
   },
   sidebar: {
-    list: document.getElementById("history-list"),
-    btnNew: document.getElementById("btn-new-table"),
-    toggle: document.getElementById("btn-sidebar-toggle"),
     el: document.getElementById("sidebar"),
+    list: document.getElementById("history-list"),
+    toggle: document.getElementById("btn-sidebar-toggle"),
+    close: document.getElementById("btn-sidebar-close"),
+    overlay: document.getElementById("sidebar-overlay"),
+    btnNew: document.getElementById("btn-new-table"),
   },
   print: {
     date: document.getElementById("print-date"),
@@ -239,6 +242,37 @@ UI.sidebar.btnNew.addEventListener("click", () => {
   if (window.innerWidth <= 768) UI.sidebar.el.classList.remove("open");
 });
 
+// Sayfa yüklendiğinde çalışacaklar
+document.addEventListener("DOMContentLoaded", () => {
+  // Temayı yükle
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+    if(UI.prompt.btnThemeToggle) UI.prompt.btnThemeToggle.textContent = "☀️";
+  }
+
+  loadHistory();
+  if (window.innerWidth <= 768) {
+    UI.sidebar.el.classList.remove("open");
+  }
+});
+
+// Tema Değiştirme Butonu
+if (UI.prompt.btnThemeToggle) {
+  UI.prompt.btnThemeToggle.addEventListener("click", () => {
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    if (currentTheme === "light") {
+      document.documentElement.removeAttribute("data-theme");
+      localStorage.setItem("theme", "dark");
+      UI.prompt.btnThemeToggle.textContent = "🌙";
+    } else {
+      document.documentElement.setAttribute("data-theme", "light");
+      localStorage.setItem("theme", "light");
+      UI.prompt.btnThemeToggle.textContent = "☀️";
+    }
+  });
+}
+
 // Satır Ekle
 UI.table.btnAddRow.addEventListener("click", () => {
   if (!currentTableData) return;
@@ -364,9 +398,51 @@ UI.table.btnPrint.addEventListener("click", () => {
   window.print();
 });
 
-// Sidebar Toggle (Mobil)
-UI.sidebar.toggle.addEventListener("click", () => {
-  UI.sidebar.el.classList.toggle("open");
+// Sidebar Açma / Kapama Fonksiyonları
+function openSidebar() {
+  UI.sidebar.el.classList.add("open");
+  if(UI.sidebar.overlay) UI.sidebar.overlay.classList.add("active");
+}
+
+function closeSidebar() {
+  UI.sidebar.el.classList.remove("open");
+  if(UI.sidebar.overlay) UI.sidebar.overlay.classList.remove("active");
+}
+
+// Sidebar Toggle (Sol Üst Hamburger)
+if (UI.sidebar.toggle) {
+  UI.sidebar.toggle.addEventListener("click", () => {
+    if (UI.sidebar.el.classList.contains("open")) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+}
+
+// Sidebar Kapat (İçerideki X)
+if (UI.sidebar.close) {
+  UI.sidebar.close.addEventListener("click", closeSidebar);
+}
+
+// Sidebar Overlay'a tıklayınca kapat (Boşluğa tıklama)
+if (UI.sidebar.overlay) {
+  UI.sidebar.overlay.addEventListener("click", closeSidebar);
+}
+
+// Mobilde Sağa/Sola Kaydırarak (Swipe) Kapatma Mantığı
+let touchStartX = 0;
+let touchEndX = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+document.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  if (touchStartX - touchEndX > 50) { // Sola doğru en az 50px kaydırma
+    if (UI.sidebar.el.classList.contains("open")) {
+      closeSidebar();
+    }
+  }
 });
 
 // Yapay Zeka ile Mevcut Tabloyu Güncelle (AI Chat)
@@ -582,9 +658,27 @@ function renderTable() {
       tr.appendChild(td);
     });
 
-    // Silme butonu
+    // İşlem Butonları (Yukarı, Aşağı, Sil)
     const tdAction = document.createElement("td");
     tdAction.className = "td-actions";
+    
+    // Yukarı Butonu
+    const btnUp = document.createElement("button");
+    btnUp.className = "btn-row-action";
+    btnUp.innerHTML = "↑";
+    btnUp.title = "Yukarı Taşı";
+    btnUp.onclick = () => window.moveRow(rowIndex, -1);
+    if (rowIndex === 0) btnUp.style.visibility = "hidden"; // İlk satır yukarı gidemez
+
+    // Aşağı Butonu
+    const btnDown = document.createElement("button");
+    btnDown.className = "btn-row-action";
+    btnDown.innerHTML = "↓";
+    btnDown.title = "Aşağı Taşı";
+    btnDown.onclick = () => window.moveRow(rowIndex, 1);
+    if (rowIndex === rows.length - 1) btnDown.style.visibility = "hidden"; // Son satır aşağı gidemez
+
+    // Silme Butonu
     const btnDel = document.createElement("button");
     btnDel.className = "btn-delete-row";
     btnDel.innerHTML = "🗑️";
@@ -593,6 +687,9 @@ function renderTable() {
       currentTableData.rows.splice(rowIndex, 1);
       renderTable(); 
     };
+
+    tdAction.appendChild(btnUp);
+    tdAction.appendChild(btnDown);
     tdAction.appendChild(btnDel);
     tr.appendChild(tdAction);
 
@@ -837,5 +934,21 @@ window.moveColumn = function(idx, direction) {
   currentTableData.headers[newIdx] = temp;
   
   // Tabloyu tekrar çiz, rows dizisindeki sırayı javascript kendisi ayarlar
+  renderTable();
+};
+
+// Satır Kaydırma (Yukarı / Aşağı)
+window.moveRow = function(rowIndex, direction) {
+  if (!currentTableData) return;
+  syncTableData(); // Önce ekrandaki değişiklikleri RAM'e al
+  
+  const targetIndex = rowIndex + direction;
+  if (targetIndex < 0 || targetIndex >= currentTableData.rows.length) return; // Sınır kontrolü
+  
+  // Yer değiştirme (swap)
+  const temp = currentTableData.rows[rowIndex];
+  currentTableData.rows[rowIndex] = currentTableData.rows[targetIndex];
+  currentTableData.rows[targetIndex] = temp;
+  
   renderTable();
 };

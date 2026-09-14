@@ -17,11 +17,13 @@
 </head>
 <body>
 
-<!-- ===== SIDEBAR: Geçmiş Hesaplar ===== -->
 <aside id="sidebar" class="sidebar" aria-label="Geçmiş hesaplar">
-  <div class="sidebar-header">
-    <span class="sidebar-logo">🏗️</span>
-    <h1 class="sidebar-title">Şantiye Net</h1>
+  <div class="sidebar-header" style="display:flex; flex-direction:column; align-items:center; gap:16px; position:relative;">
+    <button id="btn-sidebar-close" class="btn btn-ghost" style="position:absolute; top:8px; right:8px; font-size:1.5rem; padding: 4px;" aria-label="Kapat">✕</button>
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 16px;">
+      <span class="sidebar-logo">🏗️</span>
+      <h1 class="sidebar-title">Şantiye Net</h1>
+    </div>
     <button id="btn-new-table" class="btn btn-primary btn-full" title="Yeni hesap başlat">
       + Yeni Hesap
     </button>
@@ -33,9 +35,20 @@
     </ul>
   </div>
 </aside>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-<!-- ===== HAMBURGer TOGGLE (mobil) ===== -->
-<button id="btn-sidebar-toggle" class="sidebar-toggle" aria-label="Menüyü aç/kapat">☰</button>
+<!-- ===== ÜST MENÜ (Top Nav) ===== -->
+<header class="top-nav">
+  <div class="nav-left">
+    <button id="btn-sidebar-toggle" class="btn btn-ghost" aria-label="Menüyü aç/kapat" style="font-size: 1.5rem; padding: 4px 8px;">☰</button>
+  </div>
+  <div class="nav-center">
+    <!-- İsteğe bağlı başlık eklenebilir -->
+  </div>
+  <div class="nav-right">
+    <button id="btn-theme-toggle" class="btn btn-ghost" aria-label="Açık/Koyu Tema" title="Açık/Koyu Tema" style="font-size: 1.5rem; padding: 4px 8px;">🌙</button>
+  </div>
+</header>
 
 <!-- ===== ANA İÇERİK ===== -->
 <main id="main" class="main">
