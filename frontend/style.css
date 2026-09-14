@@ -68,7 +68,7 @@ body { display: flex; }
 /* --- Yazdırma (Print / PDF) Ayarları --- */
 @media print {
   @page {
-    size: A4 portrait;
+    size: landscape;
     margin: 0.5cm;
   }
   body, html {

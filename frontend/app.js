@@ -36,6 +36,7 @@ const UI = {
     btnAddColumn: document.getElementById("btn-add-column"),
     btnBack: document.getElementById("btn-back"),
     btnPrint: document.getElementById("btn-print"),
+    btnExcel: document.getElementById("btn-excel"),
     error: document.getElementById("table-error"),
     saveStatus: document.getElementById("save-status"),
     aiChatInput: document.getElementById("input-ai-chat"),
@@ -177,6 +178,54 @@ UI.prompt.btnGenerate.addEventListener("click", async () => {
 // Geri Butonu
 UI.table.btnBack.addEventListener("click", () => {
   switchScreen("prompt");
+});
+
+// PDF / Yazdır Butonu
+UI.table.btnPrint.addEventListener("click", () => {
+  window.print();
+});
+
+// Excel (.xlsx) İndirme
+UI.table.btnExcel.addEventListener("click", () => {
+  if (!currentTableData || !currentTableData.headers) return;
+  
+  // SheetJS verisi hazırla
+  const wsData = [];
+  wsData.push(currentTableData.headers);
+  
+  currentTableData.rows.forEach(row => {
+    const rowData = currentTableData.headers.map(h => row[h] !== null ? row[h] : "");
+    wsData.push(rowData);
+  });
+  
+  // Toplam satırı varsa ekle
+  const totalsRow = currentTableData.headers.map(h => "");
+  totalsRow[0] = "TOPLAM";
+  let hasTotals = false;
+  
+  currentTableData.headers.forEach((h, i) => {
+    if (i > 0) {
+      let sum = 0;
+      let isNumeric = false;
+      currentTableData.rows.forEach(r => {
+        const val = parseFloat(r[h]);
+        if (!isNaN(val)) { sum += val; isNumeric = true; }
+      });
+      if (isNumeric) { totalsRow[i] = sum; hasTotals = true; }
+    }
+  });
+  
+  if (hasTotals) wsData.push(totalsRow);
+
+  let filename = "SmartTable_Cikti";
+  const title = UI.table.titleInput.value.trim();
+  if (title) filename = title;
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Tablo");
+  
+  XLSX.writeFile(wb, `${filename}.xlsx`);
 });
 
 // Yeni Hesap (Sidebar)
