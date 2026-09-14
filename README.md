@@ -1,37 +1,54 @@
-# Smart Table AI 🚀
-*(Eski adıyla Şantiye Net)*
+<div align="center">
+  <h1>🚀 Smart Table AI</h1>
+  <p><strong>Karmaşık verilerinizi, el yazısı notlarınızı ve faturalarınızı yapay zeka gücüyle anında akıllı tablolara dönüştürün.</strong></p>
+  
+  [![Live Demo](https://img.shields.io/badge/🔴_CANLI_DEMO_İÇİN_TIKLAYIN-0B101E?style=for-the-badge&logo=google-chrome&logoColor=FF8C00)](http://santiye.ahmetakaslan.com/)
+</div>
 
-Smart Table AI, düzensiz metinleri, el yazısı notları, fatura fotoğraflarını ve fişleri **yapay zeka (Gemini AI)** gücüyle anında düzenli ve düzenlenebilir veri tablolarına dönüştüren modern bir web uygulamasıdır.
+<br>
 
-## ✨ Özellikler
+## 📖 Projenin Amacı Nedir?
 
-- **Görselden Veri Çıkarma (OCR + AI):** Fiş, fatura veya herhangi bir ekran görüntüsünü yükleyin, yapay zeka içindeki tüm ticari ve mantıksal verileri (ürün, miktar, fiyat vb.) saniyeler içinde okuyup tabloya döksün.
-- **Akıllı Tablo Asistanı:** Oluşturulan tablo üzerinde değişiklik yapmak için hücrelere tıklamak zorunda değilsiniz. "Ahmet'in yevmiyesini 2000 yap", "Tüm birim fiyatlara %10 zam yap" gibi doğal dilde komutlar vererek tabloyu güncelleyin.
-- **Otomatik Kayıt (Auto-Save):** Verileriniz tarayıcınızda (Local Storage) otomatik olarak taslak olarak tutulur. Sayfayı yanlışlıkla kapatsanız bile verileriniz kaybolmaz.
-- **Gelişmiş Sütun Yönetimi:** Sütunların yerlerini kaydırın, gereksizleri silin veya başlıkları yeniden adlandırın.
-- **PDF ve Yazdırma Desteği:** Tablonuzu tek tıkla mükemmel hizalanmış ve sayfa taşması yapmayan temiz bir PDF dosyasına veya Excel'e dönüştürün.
-- **Kusursuz Mobil Deneyim:** iOS HEIC fotoğraf formatı desteği dahil tüm mobil cihazlarda sorunsuz çalışma.
+Gündelik hayatta veya iş akışlarında (özellikle şantiye, muhasebe, stok takibi gibi alanlarda) veriler genellikle dağınık fişler, WhatsApp mesajları veya el yazısı notlar halinde gelir. Bu düzensiz verileri alıp Excel formatına dönüştürmek ciddi bir zaman ve iş gücü kaybıdır.
 
-## 🛠️ Teknolojiler
-- **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3 (Custom Properties, Grid/Flexbox)
-- **Backend:** Laravel 11.x, PHP 8.2
-- **Yapay Zeka:** Google Gemini 1.5 Flash (Generative AI)
+**Smart Table AI**, tam olarak bu sorunu çözer. Arkasındaki **Google Gemini AI** görsel ve metin işleme motoru sayesinde, sisteme yüklediğiniz *herhangi bir formattaki* veriyi (bir fotoğraf, fiş, ekran görüntüsü veya düzensiz bir kopyala-yapıştır metin) saniyeler içinde analiz eder. İçerisindeki mantıksal veriyi (ürün adı, miktar, birim, fiyat, toplam vb.) anlar ve tamamen düzenlenebilir, profesyonel bir veri gridine (tabloya) dönüştürür.
 
-## 🚀 Kurulum
+*(Buraya uygulamanın arayüzünden bir resim ekleyebilirsiniz)*
+<!-- ![Uygulama Ekran Görüntüsü](/resim_yolu.png) -->
 
-1. Depoyu klonlayın:
-```bash
-git clone https://github.com/ahmetakaslan1/smart-table-ai.git
-```
-2. Frontend klasöründeki `index.html` dosyasını bir yerel sunucu (Live Server vb.) ile çalıştırın.
-3. Backend klasöründeki (Laravel) proje için `.env.example` dosyasını `.env` olarak kopyalayın ve içerisine kendi Gemini API Anahtarınızı (`GEMINI_API_KEY`) ekleyin.
-4. PHP sunucusunu başlatın:
-```bash
-php artisan serve
-```
+---
 
-## 📝 Kullanım
-- Arayüze girdikten sonra metin kutusuna karmaşık verilerinizi girin veya bir hesap fotoğrafı yükleyin.
-- "Tabloya Dönüştür" butonuna basın.
-- Çıkan tabloyu istediğiniz gibi düzenleyin veya altındaki sohbet ekranından yapay zekaya güncellettirin.
-- Sonucu bilgisayarınıza PDF/Excel olarak indirin!
+## ✨ Neler Yapabilirsiniz?
+
+* 📸 **Görselden (OCR) Akıllı Çıkarım:** Fatura veya el yazısı notunuzun fotoğrafını yükleyin. Yapay zeka oradaki yazıları okumakla kalmaz, finansal/ticari mantığını kurarak tabloya yerleştirir.
+* 🤖 **AI Chat ile Tablo Güncelleme:** Oluşturulan tablo üzerinde manuel işlem yapmak istemiyorsanız, alttaki yapay zeka asistanına *"Çimentonun birim fiyatına %20 zam yap"* veya *"Ahmet'in yevmiyesini listeden çıkar"* yazmanız yeterlidir. Tablo anında güncellenir.
+* 💾 **Otomatik Taslak (Auto-Save):** Siz yazarken veya tabloyu düzenlerken, verileriniz tarayıcı önbelleğine (Local Storage) kaydedilir. Sekmeyi yanlışlıkla kapatsanız bile hiçbir şey kaybolmaz.
+* 🛠 **Dinamik Sütun Yönetimi:** Sütunların yerlerini kaydırabilir, gereksizleri silebilir veya başlık isimlerini anında değiştirebilirsiniz. (Altındaki veriler bozulmadan başlığa uyum sağlar).
+* 📄 **Tek Tıkla PDF & Çıktı:** Mobil uyumlu, sayfadan taşmayan temiz bir algoritma ile tablonuzu kusursuz PDF formatında dışarı aktarın.
+
+## 🛠 Kullanılan Teknolojiler
+
+Bu proje, hız ve hafiflik odaklı olarak geliştirilmiştir:
+- **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3 (Modern UI)
+- **Backend:** Laravel 11.x, PHP 8.2 (RESTful API Mimarisi)
+- **Yapay Zeka:** Google Gemini 1.5 Flash (Generative AI & Vision)
+
+## 🚀 Kurulum & Çalıştırma
+
+Projeyi kendi bilgisayarınızda (lokalde) çalıştırmak için:
+
+1. **Projeyi indirin:**
+   ```bash
+   git clone https://github.com/ahmetakaslan1/smart-table-ai.git
+   ```
+2. **Backend (API) Ayarları:**
+   Backend klasöründeki `.env.example` dosyasının adını `.env` olarak değiştirin ve içerisine Gemini API anahtarınızı ekleyin:
+   ```env
+   GEMINI_API_KEY=sizin_api_anahtariniz_buraya
+   ```
+3. **Sunucuyu Başlatın:**
+   ```bash
+   php artisan serve
+   ```
+4. **Frontend:**
+   `frontend` klasöründeki `index.html` dosyasını tarayıcınızda (veya Live Server ile) açarak hemen kullanmaya başlayabilirsiniz.
