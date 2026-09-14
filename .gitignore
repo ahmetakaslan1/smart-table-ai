@@ -1,0 +1,22 @@
+# Laravel Özel Dosyaları
+santiye-test/.env
+santiye-test/.env.backup
+santiye-test/vendor/
+santiye-test/node_modules/
+santiye-test/public/storage
+santiye-test/storage/*.key
+santiye-test/bootstrap/cache/
+
+# Test ve Yedek Dosyaları (Bizim oluşturduklarımız)
+*.zip
+test_gemini*.php
+
+# Mac / Windows sistem dosyaları
+.DS_Store
+Thumbs.db
+
+# Genel
+node_modules/
+vendor/
+.env
+.env.*
