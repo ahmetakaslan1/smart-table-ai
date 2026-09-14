@@ -9,7 +9,11 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=7" />
+  
+  <!-- SheetJS for Excel Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
 
@@ -84,6 +88,7 @@
         <button id="btn-add-column" class="btn btn-outline">+ Sütun</button>
         <button id="btn-add-row" class="btn btn-outline">+ Satır</button>
         <button id="btn-save" class="btn btn-success">💾 Kaydet</button>
+        <button id="btn-excel" class="btn btn-success">📊 Excel İndir</button>
         <button id="btn-print" class="btn btn-outline">🖨️ PDF / Yazdır</button>
       </div>
       
