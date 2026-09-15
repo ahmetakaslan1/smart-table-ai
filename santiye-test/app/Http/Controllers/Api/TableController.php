@@ -99,7 +99,7 @@ class TableController extends Controller
     public function update(Request $request, HakedisTable $table): JsonResponse
     {
         $user = auth('sanctum')->user();
-        if ($table->user_id !== null && (!$user || $user->id !== $table->user_id)) {
+        if ($table->user_id !== null && (!$user || ($user->id !== $table->user_id && !$user->is_admin))) {
             return response()->json(['success' => false, 'message' => 'Bu tabloyu düzenleme yetkiniz yok.'], 403);
         }
 
@@ -147,7 +147,7 @@ class TableController extends Controller
     public function destroy(HakedisTable $table): JsonResponse
     {
         $user = auth('sanctum')->user();
-        if ($table->user_id !== null && (!$user || $user->id !== $table->user_id)) {
+        if ($table->user_id !== null && (!$user || ($user->id !== $table->user_id && !$user->is_admin))) {
             return response()->json(['success' => false, 'message' => 'Bu tabloyu silme yetkiniz yok.'], 403);
         }
 

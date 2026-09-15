@@ -1295,9 +1295,7 @@ async function logout() {
 // ADMİN PANELİ FONKSİYONLARI
 // -----------------------------------------
 async function showAdminPanel() {
-  UI.screens.prompt.classList.add('hidden');
-  UI.screens.table.classList.add('hidden');
-  UI.screens.admin.classList.remove('hidden');
+  switchScreen("admin");
   
   const token = localStorage.getItem('auth_token');
   UI.admin.usersList.innerHTML = "Yükleniyor...";
@@ -1362,10 +1360,9 @@ async function loadAdminUserTables(userId, userName) {
         `;
         div.onclick = () => {
           // Tabloyu ekranda göster
-          currentTableId = t.id;
-          currentTableData = { headers: [], rows: [] };
-          // loadTable(t.id) fonksiyonunuz varsa onu çağırın, şimdilik sadece alert
-          alert("Tabloyu yüklemek için app.js load history mantığı kullanılabilir.");
+          loadTableDetails(t.id);
+          // Admin alt panelini gizle
+          UI.admin.tablesContainer.classList.add('hidden');
         };
         UI.admin.tablesList.appendChild(div);
       });
