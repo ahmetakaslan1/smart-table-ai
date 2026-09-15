@@ -25,6 +25,10 @@ const UI = {
     fileInput: document.getElementById("input-image"),
     btnUploadImage: document.getElementById("btn-upload-image"),
     imageName: document.getElementById("image-name"),
+    progressContainer: document.getElementById("generation-progress-container"),
+    progressText: document.getElementById("progress-status-text"),
+    progressPercentage: document.getElementById("progress-percentage"),
+    progressFill: document.getElementById("progress-bar-fill"),
     btnThemeToggle: document.getElementById("btn-theme-toggle"),
   },
   table: {
@@ -168,13 +172,19 @@ UI.prompt.btnGenerate.addEventListener("click", async () => {
     
     currentTableData = data.data;
     UI.table.titleInput.value = "";
-    renderTable();
-    switchScreen("table");
+    
+    setLoading(false, true); // Progress %100 olsun
+    
+    // %100'ü görsün diye 800ms bekleyip ekrana geçelim
+    setTimeout(() => {
+      renderTable();
+      switchScreen("table");
+    }, 800);
+
   } catch (err) {
     UI.prompt.error.textContent = err.message;
     UI.prompt.error.classList.remove("hidden");
-  } finally {
-    setLoading(false);
+    setLoading(false, false);
   }
 });
 
@@ -309,7 +319,13 @@ UI.table.btnAddColumn.addEventListener("click", () => {
 UI.table.btnSave.addEventListener("click", async () => {
   if (!currentTableData) return;
 
-  const title = UI.table.titleInput.value.trim() || "İsimsiz Hesap";
+  const title = UI.table.titleInput.value.trim();
+  
+  if (!title) {
+    alert("Lütfen kaydetmeden önce tablonuza bir isim verin!");
+    UI.table.titleInput.focus();
+    return;
+  }
   const raw_input = UI.prompt.input.value.trim();
 
   // Hücrelerdeki güncel verileri topla
@@ -534,14 +550,58 @@ function sortHeaders(headers) {
   });
 }
 
-function setLoading(isLoading) {
+let progressInterval = null;
+let currentProgress = 0;
+
+function setLoading(isLoading, isSuccess = false) {
   UI.prompt.btnGenerate.disabled = isLoading;
+  
   if (isLoading) {
-    UI.prompt.btnText.classList.add("hidden");
+    UI.prompt.btnGenerateText.classList.add("hidden");
     UI.prompt.loader.classList.remove("hidden");
+    
+    // Progress Bar Başlat
+    if (UI.prompt.progressContainer) {
+      UI.prompt.progressContainer.classList.remove("hidden");
+      UI.prompt.progressText.textContent = "Yapay zeka analiz ediyor...";
+      currentProgress = 0;
+      UI.prompt.progressFill.style.width = "0%";
+      UI.prompt.progressPercentage.textContent = "0%";
+      
+      progressInterval = setInterval(() => {
+        let remaining = 95 - currentProgress;
+        currentProgress += remaining * 0.05; // Yavaş yavaş %95'e yaklaşır
+        
+        UI.prompt.progressFill.style.width = `${currentProgress}%`;
+        UI.prompt.progressPercentage.textContent = `${Math.floor(currentProgress)}%`;
+        
+        if (currentProgress > 30) UI.prompt.progressText.textContent = "Tablo yapısı çıkarılıyor...";
+        if (currentProgress > 60) UI.prompt.progressText.textContent = "Veriler hesaplanıyor...";
+        if (currentProgress > 85) UI.prompt.progressText.textContent = "Son kontroller yapılıyor...";
+      }, 400);
+    }
   } else {
-    UI.prompt.btnText.classList.remove("hidden");
-    UI.prompt.loader.classList.add("hidden");
+    clearInterval(progressInterval);
+    
+    if (isSuccess && UI.prompt.progressContainer) {
+      // 100% yapıp bekletiyoruz (Ekran geçişini setTimeout yapıyor)
+      UI.prompt.progressFill.style.width = "100%";
+      UI.prompt.progressPercentage.textContent = "100%";
+      UI.prompt.progressText.textContent = "Tablo hazır!";
+      
+      setTimeout(() => {
+        UI.prompt.btnGenerateText.classList.remove("hidden");
+        UI.prompt.loader.classList.add("hidden");
+        UI.prompt.progressContainer.classList.add("hidden");
+      }, 800);
+    } else {
+      // Hata durumu, direkt gizle
+      UI.prompt.btnGenerateText.classList.remove("hidden");
+      UI.prompt.loader.classList.add("hidden");
+      if (UI.prompt.progressContainer) {
+        UI.prompt.progressContainer.classList.add("hidden");
+      }
+    }
   }
 }
 
@@ -619,35 +679,10 @@ function renderTable() {
       const hLower = h.toLowerCase();
       const isTotal = hLower.includes("toplam") || hLower.includes("tutar");
       
-      // Kullanıcı her şeyi yazmakta özgür olsun ("yanlış yapıyorsa onun suçudur").
-      // Sadece formatlama için numeric class'ı ekliyoruz, klavyeyi kitlemiyoruz.
       input.addEventListener("blur", () => {
-        const originalVal = input.value.trim();
-        
-        // Eğer içinde sadece rakam, nokta, virgül varsa sayı olarak formatla
-        // Eğer harf veya metin varsa (örn: 'Çimento', '10 Torba') ASLA dokunma!
-        const isStrictlyNumeric = /^[-0-9.,]+$/.test(originalVal);
-        
-        if (isStrictlyNumeric && originalVal !== "") {
-          const parsed = Numpad.parseNumber(originalVal);
-          if (!isNaN(parsed)) {
-            input.value = Numpad.formatTR(parsed);
-          }
-        }
-        calculateRowTotal(tr); // Satır içi çarpma işlemi (Miktar x Fiyat)
-        calculateTotals();     // Genel toplam (Dikey toplama)
-      });
-      
-      input.addEventListener("focus", () => {
-        const originalVal = input.value.trim();
-        const isStrictlyNumeric = /^[-0-9.,]+$/.test(originalVal);
-        
-        if (isStrictlyNumeric && originalVal !== "") {
-          const parsed = Numpad.parseNumber(originalVal);
-          if (!isNaN(parsed)) {
-            input.value = parsed;
-          }
-        }
+        // Otomatik formatlamayı tamamen kaldırdık, kullanıcı ne yazarsa o kalır.
+        calculateRowTotal(tr); 
+        calculateTotals();
       });
 
       if (isTotal) {

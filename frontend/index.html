@@ -84,6 +84,18 @@
             <span id="btn-generate-text">Tabloya Dönüştür →</span>
             <span id="btn-generate-loader" class="loader hidden"></span>
           </button>
+          
+          <!-- PROGRESS BAR -->
+          <div id="generation-progress-container" class="progress-container hidden">
+            <div class="progress-header">
+              <span id="progress-status-text">Yapay zeka analiz ediyor...</span>
+              <span id="progress-percentage">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="progress-bar-fill" class="progress-bar-fill"></div>
+            </div>
+          </div>
+          
         </div>
       </div>
       <div id="prompt-error" class="alert alert-error hidden"></div>

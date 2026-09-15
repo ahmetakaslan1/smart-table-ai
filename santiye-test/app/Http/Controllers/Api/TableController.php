@@ -38,6 +38,9 @@ class TableController extends Controller
             'headers'   => 'required|array',
             'rows'      => 'required|array',
             'rows.*.columns' => 'required|array',
+        ], [
+            'rows.required' => 'En az bir satır olmadan tabloyu kaydedemezsiniz.',
+            'headers.required' => 'Tablo başlıkları eksik.'
         ]);
 
         $table = HakedisTable::create([
@@ -86,6 +89,8 @@ class TableController extends Controller
             'title'          => 'nullable|string|max:255',
             'rows'           => 'required|array',
             'rows.*.columns' => 'required|array',
+        ], [
+            'rows.required' => 'En az bir satır olmadan tabloyu kaydedemezsiniz.'
         ]);
 
         // Başlığı güncelle
