@@ -14,6 +14,32 @@ const UI = {
   screens: {
     prompt: document.getElementById("screen-prompt"),
     table: document.getElementById("screen-table"),
+    admin: document.getElementById("screen-admin"),
+  },
+  auth: {
+    modal: document.getElementById("auth-modal"),
+    btnToggle: document.getElementById("btn-auth-toggle"),
+    btnClose: document.getElementById("btn-auth-close"),
+    title: document.getElementById("auth-title"),
+    error: document.getElementById("auth-error"),
+    success: document.getElementById("auth-success"),
+    nameGroup: document.getElementById("auth-name-group"),
+    name: document.getElementById("auth-name"),
+    email: document.getElementById("auth-email"),
+    passwordGroup: document.getElementById("auth-password-group"),
+    password: document.getElementById("auth-password"),
+    submit: document.getElementById("btn-auth-submit"),
+    toggleText: document.getElementById("auth-toggle-text"),
+    toggleLink: document.getElementById("auth-toggle-link"),
+    forgotText: document.getElementById("auth-forgot-text"),
+    forgotLink: document.getElementById("auth-forgot-link"),
+  },
+  admin: {
+    usersList: document.getElementById("admin-users-list"),
+    tablesContainer: document.getElementById("admin-user-tables-container"),
+    tablesList: document.getElementById("admin-user-tables-list"),
+    btnBack: document.getElementById("btn-admin-back"),
+    selectedUserName: document.getElementById("admin-selected-user-name"),
   },
   prompt: {
     input: document.getElementById("input-raw-text"),
@@ -213,20 +239,26 @@ UI.table.btnExcel.addEventListener("click", () => {
   
   // Toplam satırı varsa ekle
   const totalsRow = currentTableData.headers.map(h => "");
-  totalsRow[0] = "TOPLAM";
-  let hasTotals = false;
+  totalsRow[0] = "GENEL TOPLAM";
   
-  currentTableData.headers.forEach((h, i) => {
-    if (i > 0) {
-      let sum = 0;
-      let isNumeric = false;
-      currentTableData.rows.forEach(r => {
-        const val = parseFloat(r[h]);
-        if (!isNaN(val)) { sum += val; isNumeric = true; }
-      });
-      if (isNumeric) { totalsRow[i] = sum; hasTotals = true; }
-    }
-  });
+  const totalCols = currentTableData.headers.filter(
+    (h) => h.toLowerCase().includes("toplam") || h.toLowerCase().includes("tutar")
+  );
+
+  let hasTotals = false;
+  if (totalCols.length > 0) {
+    currentTableData.headers.forEach((h, i) => {
+      if (totalCols.includes(h)) {
+        let sum = 0;
+        currentTableData.rows.forEach(r => {
+          const val = Numpad.parseNumber(r[h]);
+          if (!isNaN(val)) { sum += val; }
+        });
+        totalsRow[i] = sum;
+        hasTotals = true;
+      }
+    });
+  }
   
   if (hasTotals) wsData.push(totalsRow);
 
@@ -359,12 +391,16 @@ UI.table.btnSave.addEventListener("click", async () => {
     UI.table.btnSave.disabled = true;
     UI.table.btnSave.textContent = "Kaydediliyor...";
 
+    const reqHeaders = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+    const token = localStorage.getItem('auth_token');
+    if (token) reqHeaders['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(url, {
       method: method,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: reqHeaders,
       body: JSON.stringify(payload),
     });
 
@@ -373,6 +409,7 @@ UI.table.btnSave.addEventListener("click", async () => {
       throw new Error(data.message || "Kayıt başarısız.");
 
     currentTableId = data.data.id;
+    if (!currentUser) addGuestTable(currentTableId);
     showSaveStatus("Başarıyla kaydedildi!", "success");
     loadHistory(); // Geçmişi yenile
   } catch (err) {
@@ -817,10 +854,13 @@ function calculateTotals() {
 // Geçmişi Yükle
 async function loadHistory() {
   try {
+    const reqHeaders = { "Accept": "application/json" };
+    const token = localStorage.getItem('auth_token');
+    if (token) reqHeaders['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${API_BASE_URL}/tables`, {
-      headers: { Accept: "application/json" },
+      headers: reqHeaders
     });
-    if (!res.ok) return;
     const data = await res.json();
 
     UI.sidebar.list.innerHTML = "";
@@ -876,8 +916,12 @@ async function loadHistory() {
 // Belirli bir tabloyu getir
 async function loadTableDetails(id) {
   try {
+    const reqHeaders = { "Accept": "application/json" };
+    const token = localStorage.getItem('auth_token');
+    if (token) reqHeaders['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${API_BASE_URL}/tables/${id}`, {
-      headers: { Accept: "application/json" },
+      headers: reqHeaders
     });
     const data = await res.json();
     if (res.ok && data.success) {
@@ -913,9 +957,13 @@ async function loadTableDetails(id) {
 // Tabloyu Sil
 async function deleteTable(id) {
   try {
+    const reqHeaders = { "Accept": "application/json" };
+    const token = localStorage.getItem('auth_token');
+    if (token) reqHeaders['Authorization'] = `Bearer ${token}`;
+
     await fetch(`${API_BASE_URL}/tables/${id}`, {
       method: "DELETE",
-      headers: { Accept: "application/json" },
+      headers: reqHeaders,
     });
     if (currentTableId === id) {
       UI.sidebar.btnNew.click(); // Ekranı temizle
@@ -987,3 +1035,351 @@ window.moveRow = function(rowIndex, direction) {
   
   renderTable();
 };
+
+/* =========================================================
+   AUTH (KİMLİK DOĞRULAMA) VE ADMİN PANELI İŞLEMLERİ
+   ========================================================= */
+
+let currentUser = null;
+let authMode = 'login'; // login, register, forgot
+const API_URL = API_BASE_URL; // Üstte tanımlanan dinamik URL kullanılıyor
+
+// 1. Başlangıçta Giriş Kontrolü
+async function checkAuth() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('verified')) {
+    const status = urlParams.get('verified');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    openAuthModal();
+    if (status === 'success') {
+      UI.auth.success.textContent = "E-posta adresiniz başarıyla doğrulandı! Şimdi giriş yapabilirsiniz.";
+      UI.auth.success.classList.remove('hidden');
+    } else {
+      UI.auth.error.textContent = "Doğrulama bağlantısı geçersiz veya süresi dolmuş.";
+      UI.auth.error.classList.remove('hidden');
+    }
+  }
+
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    updateAuthUI();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      currentUser = data.data;
+      updateAuthUI();
+      loadHistory(); // Kullanıcının tablolarını yükle
+    } else {
+      localStorage.removeItem('auth_token');
+    }
+  } catch(e) {
+    console.error("Auth check failed", e);
+  }
+}
+
+// UI Güncelleme (Giriş Yapıldı mı?)
+function updateAuthUI() {
+  if (currentUser) {
+    UI.auth.btnToggle.textContent = currentUser.name + (currentUser.is_admin ? " (Admin)" : "");
+    // Çıkış yap butonu oluştur veya admin paneline git
+    UI.auth.btnToggle.onclick = () => {
+      if (currentUser.is_admin) {
+        showAdminPanel();
+      } else {
+        if(confirm("Çıkış yapmak istediğinize emin misiniz?")) logout();
+      }
+    };
+    
+    if (currentUser.is_admin) {
+      // Çıkış butonu admin için ayrı koyalım
+      const logoutBtn = document.createElement("button");
+      logoutBtn.className = "btn btn-ghost";
+      logoutBtn.textContent = "Çıkış";
+      logoutBtn.onclick = logout;
+      UI.auth.btnToggle.parentElement.appendChild(logoutBtn);
+    }
+  } else {
+    UI.auth.btnToggle.textContent = "Giriş Yap";
+    UI.auth.btnToggle.onclick = openAuthModal;
+  }
+}
+
+// Modal Aç/Kapat
+function openAuthModal() {
+  UI.auth.modal.classList.remove('hidden');
+  setAuthMode('login');
+}
+UI.auth.btnClose.addEventListener('click', () => UI.auth.modal.classList.add('hidden'));
+
+// Auth Modları (Login / Register)
+function setAuthMode(mode) {
+  authMode = mode;
+  UI.auth.error.classList.add('hidden');
+  UI.auth.success.classList.add('hidden');
+
+  if (mode === 'login') {
+    UI.auth.title.textContent = "Giriş Yap";
+    UI.auth.nameGroup.classList.add('hidden');
+    UI.auth.passwordGroup.classList.remove('hidden');
+    UI.auth.submit.textContent = "Giriş Yap";
+    UI.auth.toggleText.innerHTML = 'Hesabınız yok mu? <a href="#" id="auth-toggle-link" style="color: var(--accent); text-decoration: underline;">Kayıt Ol</a>';
+    UI.auth.forgotText.classList.remove('hidden');
+  } else if (mode === 'register') {
+    UI.auth.title.textContent = "Kayıt Ol";
+    UI.auth.nameGroup.classList.remove('hidden');
+    UI.auth.passwordGroup.classList.remove('hidden');
+    UI.auth.submit.textContent = "Kayıt Ol";
+    UI.auth.toggleText.innerHTML = 'Zaten hesabınız var mı? <a href="#" id="auth-toggle-link" style="color: var(--accent); text-decoration: underline;">Giriş Yap</a>';
+    UI.auth.forgotText.classList.add('hidden');
+  } else if (mode === 'forgot') {
+    UI.auth.title.textContent = "Şifremi Unuttum";
+    UI.auth.nameGroup.classList.add('hidden');
+    UI.auth.passwordGroup.classList.add('hidden');
+    UI.auth.submit.textContent = "Sıfırlama Linki Gönder";
+    UI.auth.toggleText.innerHTML = 'Vazgeç <a href="#" id="auth-toggle-link" style="color: var(--accent); text-decoration: underline;">Giriş Ekranına Dön</a>';
+    UI.auth.forgotText.classList.add('hidden');
+  }
+
+  // Olay Dinleyicileri (Yeniden atamak gerekiyor çünkü innerHTML değişti)
+  document.getElementById("auth-toggle-link").onclick = (e) => {
+    e.preventDefault();
+    if (authMode === 'login') setAuthMode('register');
+    else setAuthMode('login');
+  };
+  
+  const forgotLink = document.getElementById("auth-forgot-link");
+  if(forgotLink) {
+    forgotLink.onclick = (e) => {
+      e.preventDefault();
+      setAuthMode('forgot');
+    }
+  }
+}
+
+// Ziyaretçi Tablolarını Kaydet (LocalStorage)
+function addGuestTable(id) {
+  if (currentUser) return; // Zaten giriş yapmış
+  let tables = JSON.parse(localStorage.getItem('guest_table_ids') || '[]');
+  if (!tables.includes(id)) {
+    tables.push(id);
+    localStorage.setItem('guest_table_ids', JSON.stringify(tables));
+  }
+}
+
+// Form Gönderimi (Login / Register / Forgot)
+UI.auth.submit.addEventListener('click', async () => {
+  const name = UI.auth.name.value.trim();
+  const email = UI.auth.email.value.trim();
+  const password = UI.auth.password.value;
+  const guest_table_ids = JSON.parse(localStorage.getItem('guest_table_ids') || '[]');
+
+  UI.auth.error.classList.add('hidden');
+  UI.auth.success.classList.add('hidden');
+  UI.auth.submit.disabled = true;
+  UI.auth.submit.textContent = "Bekleyin...";
+
+  try {
+    let endpoint = "";
+    let payload = { email, guest_table_ids };
+
+    if (authMode === 'register') {
+      endpoint = "/register";
+      payload.name = name;
+      payload.password = password;
+    } else if (authMode === 'login') {
+      endpoint = "/login";
+      payload.password = password;
+    } else {
+      // Forgot password (Simülasyon, backend rotası eklenebilir)
+      UI.auth.success.textContent = "Şifre sıfırlama linki e-postanıza gönderildi.";
+      UI.auth.success.classList.remove('hidden');
+      UI.auth.submit.disabled = false;
+      UI.auth.submit.textContent = "Gönderildi";
+      return;
+    }
+
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      let errorMsg = data.message;
+      if (data.errors) {
+        errorMsg = Object.values(data.errors)[0][0]; // İlk hatayı göster
+      }
+      throw new Error(errorMsg || "Bir hata oluştu.");
+    }
+
+    if (authMode === 'register') {
+      UI.auth.success.textContent = data.message;
+      UI.auth.success.classList.remove('hidden');
+      localStorage.removeItem('guest_table_ids'); // Aktarım tamam
+    } else if (authMode === 'login') {
+      localStorage.setItem('auth_token', data.data.token);
+      localStorage.removeItem('guest_table_ids');
+      currentUser = data.data.user;
+      currentUser.is_admin = data.data.is_admin;
+      UI.auth.modal.classList.add('hidden');
+      updateAuthUI();
+      loadHistory();
+      if(currentUser.is_admin) showAdminPanel();
+    }
+  } catch (err) {
+    if (err.message && err.message.includes("henüz doğrulanmamış")) {
+      UI.auth.error.innerHTML = `${err.message} <br><button id="btn-resend-email" class="btn btn-outline" style="margin-top:8px; width:100%; padding:8px; font-size:12px; background:transparent;">E-Postayı Tekrar Gönder</button>`;
+      UI.auth.error.classList.remove('hidden');
+      
+      document.getElementById('btn-resend-email').onclick = async (e) => {
+        e.preventDefault();
+        e.target.textContent = "Gönderiliyor...";
+        e.target.disabled = true;
+        try {
+          const resendReq = await fetch(`${API_URL}/email/resend`, {
+            method: "POST",
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+            body: JSON.stringify({email: email}) // formdaki email değişkenini kullanıyoruz
+          });
+          const resendData = await resendReq.json();
+          if (resendData.success) {
+            UI.auth.success.textContent = resendData.message;
+            UI.auth.success.classList.remove('hidden');
+            UI.auth.error.classList.add('hidden');
+          } else {
+            e.target.textContent = "Hata: " + resendData.message;
+            e.target.disabled = false;
+          }
+        } catch(e2) {
+          e.target.textContent = "Bağlantı hatası!";
+          e.target.disabled = false;
+        }
+      };
+    } else {
+      UI.auth.error.textContent = err.message || "Bir hata oluştu.";
+      UI.auth.error.classList.remove('hidden');
+    }
+  } finally {
+    UI.auth.submit.disabled = false;
+    if (authMode === 'login') UI.auth.submit.textContent = "Giriş Yap";
+    if (authMode === 'register') UI.auth.submit.textContent = "Kayıt Ol";
+  }
+});
+
+async function logout() {
+  const token = localStorage.getItem('auth_token');
+  if(token) {
+    await fetch(`${API_URL}/logout`, { method: "POST", headers: { 'Authorization': `Bearer ${token}` }});
+  }
+  localStorage.removeItem('auth_token');
+  window.location.reload();
+}
+
+// -----------------------------------------
+// ADMİN PANELİ FONKSİYONLARI
+// -----------------------------------------
+async function showAdminPanel() {
+  UI.screens.prompt.classList.add('hidden');
+  UI.screens.table.classList.add('hidden');
+  UI.screens.admin.classList.remove('hidden');
+  
+  const token = localStorage.getItem('auth_token');
+  UI.admin.usersList.innerHTML = "Yükleniyor...";
+  
+  try {
+    const res = await fetch(`${API_URL}/admin/users`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+    });
+    const data = await res.json();
+    if(data.success) {
+      renderAdminUsers(data.data);
+    }
+  } catch(e) {
+    UI.admin.usersList.innerHTML = "Hata oluştu.";
+  }
+}
+
+function renderAdminUsers(users) {
+  UI.admin.usersList.innerHTML = "";
+  users.forEach(u => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+    div.style.display = "flex";
+    div.style.justifyContent = "space-between";
+    div.innerHTML = `
+      <div>
+        <strong>${u.name}</strong> ${u.is_admin ? '<span style="color:red">(Admin)</span>' : ''}<br>
+        <small style="color:var(--text-muted)">${u.email}</small>
+      </div>
+      <div>
+        <span class="badge" style="background:var(--primary); padding: 4px 8px; border-radius: 4px;">${u.tables_count} Tablo</span>
+      </div>
+    `;
+    div.onclick = () => loadAdminUserTables(u.id, u.name);
+    UI.admin.usersList.appendChild(div);
+  });
+}
+
+async function loadAdminUserTables(userId, userName) {
+  UI.admin.tablesContainer.classList.remove('hidden');
+  UI.admin.selectedUserName.textContent = `${userName} - Tabloları`;
+  UI.admin.tablesList.innerHTML = "Yükleniyor...";
+  
+  const token = localStorage.getItem('auth_token');
+  try {
+    const res = await fetch(`${API_URL}/admin/users/${userId}/tables`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+    });
+    const data = await res.json();
+    if(data.success) {
+      UI.admin.tablesList.innerHTML = "";
+      if(data.data.tables.length === 0) {
+        UI.admin.tablesList.innerHTML = "Bu kullanıcının henüz tablosu yok.";
+        return;
+      }
+      data.data.tables.forEach(t => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `
+          <strong>${t.title}</strong><br>
+          <small>${new Date(t.created_at).toLocaleDateString()}</small>
+        `;
+        div.onclick = () => {
+          // Tabloyu ekranda göster
+          currentTableId = t.id;
+          currentTableData = { headers: [], rows: [] };
+          // loadTable(t.id) fonksiyonunuz varsa onu çağırın, şimdilik sadece alert
+          alert("Tabloyu yüklemek için app.js load history mantığı kullanılabilir.");
+        };
+        UI.admin.tablesList.appendChild(div);
+      });
+    }
+  } catch(e) {
+    UI.admin.tablesList.innerHTML = "Hata oluştu.";
+  }
+}
+
+if(UI.admin.btnBack) {
+  UI.admin.btnBack.onclick = () => {
+    UI.admin.tablesContainer.classList.add('hidden');
+  };
+}
+
+// Uygulama açılışında auth kontrolü yap
+window.addEventListener('DOMContentLoaded', checkAuth);

@@ -14,15 +14,25 @@ class TableController extends Controller
      * GET /api/tables
      * Tüm kayıtlı tabloların listesini döndürür (satırlar olmadan, sadece başlıklar).
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $tables = HakedisTable::select('id', 'title', 'created_at', 'updated_at')
-            ->latest()
-            ->get();
+        // auth:sanctum middleware'i eklemediğimiz için manuel token kontrolü yapıyoruz.
+        // (Eğer route'ta middleware varsa $request->user() direkt gelir)
+        $user = auth('sanctum')->user();
+
+        $query = HakedisTable::select('id', 'title', 'created_at', 'updated_at')->latest();
+
+        if ($user) {
+            // Giriş yapmışsa sadece kendi tablolarını görsün
+            $query->where('user_id', $user->id);
+        } else {
+            // Ziyaretçiyse sadece anonim (user_id = null) tabloları görsün
+            $query->whereNull('user_id');
+        }
 
         return response()->json([
             'success' => true,
-            'data'    => $tables,
+            'data'    => $query->get(),
         ]);
     }
 
@@ -43,9 +53,12 @@ class TableController extends Controller
             'headers.required' => 'Tablo başlıkları eksik.'
         ]);
 
+        $user = auth('sanctum')->user();
+        
         $table = HakedisTable::create([
             'title'     => $request->input('title', 'İsimsiz Hesap'),
             'raw_input' => $request->input('raw_input'),
+            'user_id'   => $user ? $user->id : null,
         ]);
 
         $rowsToInsert = [];
@@ -85,6 +98,11 @@ class TableController extends Controller
      */
     public function update(Request $request, HakedisTable $table): JsonResponse
     {
+        $user = auth('sanctum')->user();
+        if ($table->user_id !== null && (!$user || $user->id !== $table->user_id)) {
+            return response()->json(['success' => false, 'message' => 'Bu tabloyu düzenleme yetkiniz yok.'], 403);
+        }
+
         $request->validate([
             'title'          => 'nullable|string|max:255',
             'rows'           => 'required|array',
@@ -128,6 +146,11 @@ class TableController extends Controller
      */
     public function destroy(HakedisTable $table): JsonResponse
     {
+        $user = auth('sanctum')->user();
+        if ($table->user_id !== null && (!$user || $user->id !== $table->user_id)) {
+            return response()->json(['success' => false, 'message' => 'Bu tabloyu silme yetkiniz yok.'], 403);
+        }
+
         $table->delete(); // Cascade ile rows da silinir
 
         return response()->json([

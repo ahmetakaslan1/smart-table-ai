@@ -46,6 +46,7 @@
     <!-- İsteğe bağlı başlık eklenebilir -->
   </div>
   <div class="nav-right">
+    <button id="btn-auth-toggle" class="btn btn-secondary" style="margin-right: 8px;">Giriş Yap</button>
     <button id="btn-theme-toggle" class="btn btn-ghost" aria-label="Açık/Koyu Tema" title="Açık/Koyu Tema" style="font-size: 1.5rem; padding: 4px 8px;">🌙</button>
   </div>
 </header>
@@ -140,10 +141,64 @@
     </div>
   </section>
 
+  <!-- ===== ADMIN PANELI ===== -->
+  <section id="screen-admin" class="screen hidden">
+    <div class="glass-card" style="margin-bottom: 24px;">
+      <h2>Admin Paneli - Kullanıcılar</h2>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">Sistemdeki tüm kayıtlı kullanıcılar ve tabloları.</p>
+      
+      <div id="admin-users-list" style="display:flex; flex-direction:column; gap:12px;">
+        <!-- Kullanıcılar buraya JS ile dolacak -->
+      </div>
+    </div>
+    
+    <div id="admin-user-tables-container" class="glass-card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <h3 id="admin-selected-user-name">Kullanıcının Tabloları</h3>
+        <button id="btn-admin-back" class="btn btn-secondary">Kapat</button>
+      </div>
+      <div id="admin-user-tables-list" style="display:flex; flex-direction:column; gap:12px;">
+        <!-- Tablolar buraya JS ile dolacak -->
+      </div>
+    </div>
+  </section>
+
 </main>
 
+<!-- ===== AUTH MODAL (Giriş / Kayıt / Şifremi Unuttum) ===== -->
+<div id="auth-modal" class="modal-overlay hidden">
+  <div class="modal-content glass-card" style="max-width: 400px; width: 90%;">
+    <button id="btn-auth-close" class="btn btn-ghost" style="position:absolute; top:8px; right:8px; font-size:1.5rem;">✕</button>
+    
+    <div id="auth-form-container">
+      <h2 id="auth-title" style="margin-bottom: 16px;">Giriş Yap</h2>
+      <div id="auth-error" class="alert alert-error hidden" style="margin-bottom: 16px; padding: 12px; border-radius: 8px;"></div>
+      <div id="auth-success" class="alert alert-success hidden" style="margin-bottom: 16px; padding: 12px; border-radius: 8px; background: #dcfce7; color: #166534; border: 1px solid #22c55e;"></div>
+      
+      <div id="auth-name-group" class="form-group hidden" style="margin-bottom: 12px;">
+        <label style="display:block; margin-bottom:4px; font-size:14px; color:var(--text-muted);">Kullanıcı Adı</label>
+        <input type="text" id="auth-name" class="input-title" placeholder="Kullanıcı Adınız" style="width: 100%; padding: 10px;" />
+      </div>
 
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="display:block; margin-bottom:4px; font-size:14px; color:var(--text-muted);">E-Posta Adresi</label>
+        <input type="email" id="auth-email" class="input-title" placeholder="ornek@mail.com" style="width: 100%; padding: 10px;" />
+      </div>
 
+      <div id="auth-password-group" class="form-group" style="margin-bottom: 16px;">
+        <label style="display:block; margin-bottom:4px; font-size:14px; color:var(--text-muted);">Şifre</label>
+        <input type="password" id="auth-password" class="input-title" placeholder="••••••••" style="width: 100%; padding: 10px;" />
+      </div>
+
+      <button id="btn-auth-submit" class="btn btn-primary btn-full" style="padding: 12px; margin-bottom: 12px;">Giriş Yap</button>
+      
+      <div style="text-align: center; font-size: 14px; color: var(--text-muted);">
+        <p id="auth-toggle-text">Hesabınız yok mu? <a href="#" id="auth-toggle-link" style="color: var(--accent); text-decoration: underline;">Kayıt Ol</a></p>
+        <p id="auth-forgot-text" style="margin-top: 8px;"><a href="#" id="auth-forgot-link" style="color: var(--accent);">Şifremi Unuttum</a></p>
+      </div>
+    </div>
+  </div>
+</div>
   <!-- Uygulama Skriptleri -->
   <script src="numpad.js?v=7"></script>
   <script src="app.js?v=7"></script>

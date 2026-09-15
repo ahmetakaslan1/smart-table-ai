@@ -695,16 +695,30 @@ body {
    PRINT / PDF
    ============================================================ */
 @media print {
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  :root, html, body {
+    --bg-dark: #F3F4F6 !important;
+    --bg-panel: #FFFFFF !important;
+    --primary: #F97316 !important;
+    --text: #111827 !important;
+    --text-muted: #4B5563 !important;
+    --border: #D1D5DB !important;
+    --bg: #FFFFFF !important;
+    --surface: #FFFFFF !important;
+    --surface2: #FFFFFF !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
 
-  body, html { display: block !important; height: auto !important; background: #fff !important; color: #000 !important; font-size: 11pt; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #000 !important; }
+
+  body, html { display: block !important; height: auto !important; font-size: 11pt; }
   
   .sidebar, .sidebar-overlay, .top-nav, .table-toolbar, #btn-add-row, .btn-delete-row,
   .td-actions, #save-status, .alert, #screen-prompt { display: none !important; }
 
   .main { padding: 0 !important; display: block !important; overflow: visible !important; height: auto !important; }
-  .screen.hidden { display: block !important; }
   #screen-table { display: block !important; }
+  #screen-admin, #screen-prompt { display: none !important; }
 
   .print-header {
     display: block !important;
@@ -731,4 +745,54 @@ body {
   .hakedis-table tfoot td { background: #f0f0f0 !important; font-weight: 700; }
   .cell-input { padding: 0 !important; background: transparent !important; box-shadow: none !important; color: #000 !important; }
   .hakedis-table tfoot td { color: #000 !important; }
+}
+
+/* =========================================================
+   AUTH MODAL & ADMIN PANEL
+   ========================================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-content {
+  position: relative;
+  background: var(--bg);
+  padding: 32px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(0) scale(1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-overlay.hidden .modal-content {
+  transform: translateY(20px) scale(0.95);
+}
+
+.history-item {
+  background: var(--bg-hover);
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+.history-item:hover {
+  background: var(--border);
+  border-color: var(--accent);
 }
