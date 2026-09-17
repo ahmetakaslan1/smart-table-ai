@@ -31,7 +31,7 @@ Gündelik hayatta veya iş akışlarında (özellikle şantiye, muhasebe, stok t
 Bu proje, hız ve hafiflik odaklı olarak geliştirilmiştir:
 - **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3 (Modern UI)
 - **Backend:** Laravel 11.x, PHP 8.2 (RESTful API Mimarisi)
-- **Yapay Zeka:** Google Gemini 1.5 Flash (Generative AI & Vision)
+- **Yapay Zeka:** Google gemini-3.8-flash (Generative AI & Vision)
 
 ## 🚀 Kurulum & Çalıştırma
 
