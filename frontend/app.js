@@ -66,8 +66,7 @@ const UI = {
     btnAddRow: document.getElementById("btn-add-row"),
     btnAddColumn: document.getElementById("btn-add-column"),
     btnBack: document.getElementById("btn-back"),
-    btnPrint: document.getElementById("btn-print"),
-    btnExcel: document.getElementById("btn-excel"),
+    btnExportMenu: document.getElementById("btn-export-menu"),
     error: document.getElementById("table-error"),
     saveStatus: document.getElementById("save-status"),
     aiChatInput: document.getElementById("input-ai-chat"),
@@ -84,9 +83,17 @@ const UI = {
     btnNew: document.getElementById("btn-new-table"),
   },
   print: {
-    date: document.getElementById("print-date"),
     title: document.getElementById("print-title-text"),
+    date: document.getElementById("print-date"),
   },
+  export: {
+    modal: document.getElementById("export-modal"),
+    btnClose: document.getElementById("btn-export-close"),
+    cbDate: document.getElementById("cb-print-date"),
+    cbTime: document.getElementById("cb-print-time"),
+    btnPdf: document.getElementById("btn-export-pdf"),
+    btnExcel: document.getElementById("btn-export-excel"),
+  }
 };
 
 // --- State ---
@@ -219,59 +226,72 @@ UI.table.btnBack.addEventListener("click", () => {
   switchScreen("prompt");
 });
 
-// PDF / Yazdır Butonu
-UI.table.btnPrint.addEventListener("click", () => {
-  window.print();
-});
-
-// Excel (.xlsx) İndirme
-UI.table.btnExcel.addEventListener("click", () => {
-  if (!currentTableData || !currentTableData.headers) return;
-  
-  // SheetJS verisi hazırla
-  const wsData = [];
-  wsData.push(currentTableData.headers);
-  
-  currentTableData.rows.forEach(row => {
-    const rowData = currentTableData.headers.map(h => row[h] !== null ? row[h] : "");
-    wsData.push(rowData);
+// Dışa Aktar Butonu (Modalı açar)
+if (UI.table.btnExportMenu) {
+  UI.table.btnExportMenu.addEventListener("click", () => {
+    UI.export.modal.classList.remove("hidden");
   });
-  
-  // Toplam satırı varsa ekle
-  const totalsRow = currentTableData.headers.map(h => "");
-  totalsRow[0] = "GENEL TOPLAM";
-  
-  const totalCols = currentTableData.headers.filter(
-    (h) => h.toLowerCase().includes("toplam") || h.toLowerCase().includes("tutar")
-  );
+}
 
-  let hasTotals = false;
-  if (totalCols.length > 0) {
-    currentTableData.headers.forEach((h, i) => {
-      if (totalCols.includes(h)) {
-        let sum = 0;
-        currentTableData.rows.forEach(r => {
-          const val = Numpad.parseNumber(r[h]);
-          if (!isNaN(val)) { sum += val; }
-        });
-        totalsRow[i] = sum;
-        hasTotals = true;
-      }
+// Dışa Aktar Modalı Kapatma
+if (UI.export.btnClose) {
+  UI.export.btnClose.addEventListener("click", () => {
+    UI.export.modal.classList.add("hidden");
+  });
+}
+
+// Excel İndirme (Modal İçinden)
+if (UI.export.btnExcel) {
+  UI.export.btnExcel.addEventListener("click", () => {
+    if (!currentTableData || !currentTableData.headers) return;
+    
+    // SheetJS verisi hazırla
+    const wsData = [];
+    wsData.push(currentTableData.headers);
+    
+    currentTableData.rows.forEach(row => {
+      const rowData = currentTableData.headers.map(h => row[h] !== null ? row[h] : "");
+      wsData.push(rowData);
     });
-  }
-  
-  if (hasTotals) wsData.push(totalsRow);
+    
+    // Toplam satırı varsa ekle
+    const totalsRow = currentTableData.headers.map(h => "");
+    totalsRow[0] = "GENEL TOPLAM";
+    
+    const totalCols = currentTableData.headers.filter(
+      (h) => h.toLowerCase().includes("toplam") || h.toLowerCase().includes("tutar")
+    );
 
-  let filename = "SmartTable_Cikti";
-  const title = UI.table.titleInput.value.trim();
-  if (title) filename = title;
+    let hasTotals = false;
+    if (totalCols.length > 0) {
+      currentTableData.headers.forEach((h, i) => {
+        if (totalCols.includes(h)) {
+          let sum = 0;
+          currentTableData.rows.forEach(r => {
+            const val = Numpad.parseNumber(r[h]);
+            if (!isNaN(val)) { sum += val; }
+          });
+          totalsRow[i] = sum;
+          hasTotals = true;
+        }
+      });
+    }
+    
+    if (hasTotals) wsData.push(totalsRow);
 
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Tablo");
-  
-  XLSX.writeFile(wb, `${filename}.xlsx`);
-});
+    let filename = "SmartTable_Cikti";
+    const title = UI.table.titleInput.value.trim();
+    if (title) filename = title;
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Tablo");
+    
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+    
+    UI.export.modal.classList.add("hidden");
+  });
+}
 
 // Yeni Hesap (Sidebar)
 UI.sidebar.btnNew.addEventListener("click", () => {
@@ -420,36 +440,49 @@ UI.table.btnSave.addEventListener("click", async () => {
   }
 });
 
-// PDF / Yazdır (Akıllı Düzen)
-UI.table.btnPrint.addEventListener("click", () => {
-  const title = UI.table.titleInput.value.trim() || "Şantiye Hesap Dökümü";
-  UI.print.title.textContent = title;
-  const date = new Date().toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+// PDF / Yazdır (Modal İçinden)
+if (UI.export.btnPdf) {
+  UI.export.btnPdf.addEventListener("click", () => {
+    const title = UI.table.titleInput.value.trim() || "Şantiye Hesap Dökümü";
+    UI.print.title.textContent = title;
+    
+    const showDate = UI.export.cbDate.checked;
+    const showTime = UI.export.cbTime.checked;
+    
+    if (showDate || showTime) {
+      const opts = {};
+      if (showDate) { opts.day = 'numeric'; opts.month = 'long'; opts.year = 'numeric'; }
+      if (showTime) { opts.hour = '2-digit'; opts.minute = '2-digit'; }
+      const dateStr = new Date().toLocaleDateString("tr-TR", opts);
+      UI.print.date.textContent = "Tarih: " + dateStr;
+      UI.print.date.style.display = 'block';
+    } else {
+      UI.print.date.style.display = 'none';
+    }
+
+    // Dinamik Yazdırma CSS'i ekle
+    let printStyle = document.getElementById("smart-print-style");
+    if (!printStyle) {
+      printStyle = document.createElement("style");
+      printStyle.id = "smart-print-style";
+      document.head.appendChild(printStyle);
+    }
+    
+    // Sütun sayısı fazlaysa (4'ten çok) otomatik yatay yap
+    if (currentTableData && currentTableData.headers.length > 4) {
+      printStyle.innerHTML = "@page { size: landscape; }";
+    } else {
+      printStyle.innerHTML = "@page { size: portrait; }";
+    }
+
+    UI.export.modal.classList.add("hidden");
+    
+    // Biraz bekle (DOM güncellensin) sonra yazdır
+    setTimeout(() => {
+      window.print();
+    }, 100);
   });
-  UI.print.date.textContent = "Tarih: " + date;
-
-  // Dinamik Yazdırma CSS'i ekle
-  let printStyle = document.getElementById("smart-print-style");
-  if (!printStyle) {
-    printStyle = document.createElement("style");
-    printStyle.id = "smart-print-style";
-    document.head.appendChild(printStyle);
-  }
-  
-  // Sütun sayısı fazlaysa (4'ten çok) otomatik yatay yap
-  if (currentTableData && currentTableData.headers.length > 4) {
-    printStyle.innerHTML = "@page { size: landscape; }";
-  } else {
-    printStyle.innerHTML = "@page { size: portrait; }";
-  }
-
-  window.print();
-});
+}
 
 // Sidebar Açma / Kapama Fonksiyonları
 function openSidebar() {

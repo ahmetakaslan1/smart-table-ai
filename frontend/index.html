@@ -114,8 +114,7 @@
         <button id="btn-add-column" class="btn btn-outline">+ Sütun</button>
         <button id="btn-add-row" class="btn btn-outline">+ Satır</button>
         <button id="btn-save" class="btn btn-success">💾 Kaydet</button>
-        <button id="btn-excel" class="btn btn-success">📊 Excel İndir</button>
-        <button id="btn-print" class="btn btn-outline">🖨️ PDF / Yazdır</button>
+        <button id="btn-export-menu" class="btn btn-outline">📤 Dışa Aktar</button>
       </div>
       
       <!-- AI Chat Kutusunu Ekle -->
@@ -199,6 +198,30 @@
     </div>
   </div>
 </div>
+
+<!-- ===== EXPORT MODAL ===== -->
+<div id="export-modal" class="modal-overlay hidden">
+  <div class="modal-content glass-card" style="max-width: 320px; width: 90%; text-align: center;">
+    <button id="btn-export-close" class="btn btn-ghost" style="position:absolute; top:8px; right:8px; font-size:1.5rem;">✕</button>
+    <h2 style="margin-bottom: 16px;">Dışa Aktar</h2>
+    
+    <div style="text-align: left; margin-bottom: 16px; font-size: 14px; background: var(--bg); padding: 12px; border-radius: 8px;">
+      <strong style="display:block; margin-bottom: 8px; color: var(--text-muted);">PDF Yazdırma Ayarları:</strong>
+      <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+        <input type="checkbox" id="cb-print-date" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+        Tarihi Göster
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="cb-print-time" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+        Saati Göster
+      </label>
+    </div>
+
+    <button id="btn-export-pdf" class="btn btn-primary btn-full" style="padding: 12px; margin-bottom: 12px;">🖨️ PDF / Yazdır</button>
+    <button id="btn-export-excel" class="btn btn-success btn-full" style="padding: 12px;">📊 Excel İndir</button>
+  </div>
+</div>
+
   <!-- Uygulama Skriptleri -->
   <script src="numpad.js?v=7"></script>
   <script src="app.js?v=7"></script>
