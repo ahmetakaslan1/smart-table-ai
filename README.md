@@ -57,7 +57,7 @@ Projeyi kendi bilgisayarınızda (lokalde) çalıştırmak için:
 Bu proje **Decoupled (Ayrık) Mimari** prensibiyle tasarlanmıştır. Frontend (Arayüz) ve Backend (API) tamamen birbirinden bağımsız çalışır. 
 
 Canlı sunucu (Paylaşımlı Hosting / cPanel) kurulumu için en temiz yöntem şudur:
-- **Frontend:** Ana alan adınıza (Örn: `santiye.ahmetakaslan.com`) bağlanır. İçerisinde derleme gerektirmeyen Saf HTML/JS dosyaları barınır.
-- **Backend:** Ayrı bir alt alan adına (Örn: `api.santiye.ahmetakaslan.com`) bağlanır ve Laravel API isteklerini karşılar.
+- **Frontend:** Ana alan adınıza (Örn: `ornek-site.com`) bağlanır. İçerisinde derleme gerektirmeyen Saf HTML/JS dosyaları barınır.
+- **Backend:** Ayrı bir alt alan adına (Örn: `api.ornek-site.com`) bağlanır ve Laravel API isteklerini karşılar.
 
 *Not: Kodu canlıya alırken `frontend/app.js` içerisindeki `API_BASE_URL` değişkenini ve Backend `.env` dosyasındaki `FRONTEND_URL` değişkenini kendi alan adlarınıza göre güncellemeyi unutmayın.*
