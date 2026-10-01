@@ -40,8 +40,9 @@ Route::post('/email/resend', [AuthController::class, 'resendVerification']);
 
 // E-posta Doğrulama Rotası (Login zorunluluğu olmadan çalışacak şekilde uyarlandı)
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash, \Illuminate\Http\Request $request) {
-    // Sitenin ana dizinini bulur (Frontend'in olduğu yer)
-    $frontendUrl = $request->getSchemeAndHttpHost();
+    // Artık Frontend ve Backend farklı alan adlarında olduğu için, 
+    // doğrudan API alan adını değil, gerçek Frontend alan adını hedefliyoruz.
+    $frontendUrl = env('FRONTEND_URL', 'https://santiye.ahmetakaslan.com');
 
     if (! $request->hasValidSignature()) {
         return redirect($frontendUrl . '/?verified=error');

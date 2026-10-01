@@ -5,9 +5,11 @@
 // LÜTFEN DİKKAT: Backend URL'inizi buraya girin.
 // Dinamik API Yönlendirmesi: Hardcoded URL kaldırıldı.
 // Tarayıcı otomatik olarak hangi sitede olduğunu bulup sonuna backend yolunu ekler.
-// Örn: localhost'ta ise http://localhost/backend/public/api olur
-// Canlıda ise http://santiye.ahmetakaslan.com/backend/public/api olur
-const API_BASE_URL = window.location.origin + "/public/api";
+// Örn: localhost'ta ise http://localhost:8000/api
+// Canlıda ise https://api.santiye.ahmetakaslan.com/api
+const API_BASE_URL = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost" 
+  ? "http://127.0.0.1:8000/api" 
+  : "https://api.santiye.ahmetakaslan.com/api";
 
 // --- DOM Elementleri ---
 const UI = {
