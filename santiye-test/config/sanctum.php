@@ -49,8 +49,7 @@ return [
     | "expires_at" attribute, but first-party sessions are not affected.
     |
     */
-
-    'expiration' => null,
+    'expiration' => 10080, // 7 gün (dakika cinsinden)
 
     /*
     |--------------------------------------------------------------------------

@@ -11,6 +11,17 @@ const API_BASE_URL = window.location.hostname === "127.0.0.1" || window.location
   ? "http://127.0.0.1:8000/api" 
   : "https://api.santiye.ahmetakaslan.com/api";
 
+// --- XSS Koruması ---
+function escapeHTML(str) {
+  if (!str) return "";
+  return str.toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // --- DOM Elementleri ---
 const UI = {
   screens: {
@@ -404,6 +415,15 @@ UI.table.btnSave.addEventListener("click", async () => {
     rows: updatedRows,
   };
 
+  if (!currentUser) {
+    // Misafir Modu: DB'ye atma, sadece localStorage'da tut
+    localStorage.setItem("santiye_draft_table", JSON.stringify(payload));
+    showSaveStatus("Misafir modundasınız. Veriler cihazınıza kaydedildi. Kalıcı yapmak için giriş yapın.", "warning");
+    UI.table.btnSave.disabled = false;
+    UI.table.btnSave.textContent = "💾 Kaydet";
+    return;
+  }
+
   const url = currentTableId
     ? `${API_BASE_URL}/tables/${currentTableId}`
     : `${API_BASE_URL}/tables`;
@@ -431,7 +451,6 @@ UI.table.btnSave.addEventListener("click", async () => {
       throw new Error(data.message || "Kayıt başarısız.");
 
     currentTableId = data.data.id;
-    if (!currentUser) addGuestTable(currentTableId);
     showSaveStatus("Başarıyla kaydedildi!", "success");
     loadHistory(); // Geçmişi yenile
   } catch (err) {
@@ -679,10 +698,23 @@ function setLoading(isLoading, isSuccess = false) {
 
 function showSaveStatus(msg, type) {
   UI.table.saveStatus.textContent = msg;
-  UI.table.saveStatus.className = `save-status ${type}`;
+  // Eğer warning ise arka planı sarımsı yapalım
+  if (type === 'warning') {
+    UI.table.saveStatus.className = 'save-status';
+    UI.table.saveStatus.style.backgroundColor = '#ff9800';
+    UI.table.saveStatus.style.color = '#fff';
+    UI.table.saveStatus.style.display = 'block';
+  } else {
+    UI.table.saveStatus.className = `save-status ${type}`;
+    UI.table.saveStatus.style.backgroundColor = ''; // CSS class'ına bırak
+    UI.table.saveStatus.style.color = '';
+  }
+  
+  // Warning ise biraz daha uzun kalsın okunması için
+  const delay = type === 'warning' ? 6000 : 3000;
   setTimeout(() => {
     UI.table.saveStatus.classList.add("hidden");
-  }, 3000);
+  }, delay);
 }
 
 // Tablo Render Motoru
@@ -888,6 +920,10 @@ function calculateTotals() {
 
 // Geçmişi Yükle
 async function loadHistory() {
+  if (!currentUser) {
+    UI.sidebar.list.innerHTML = '<li class="history-empty">Geçmişi görmek için giriş yapmalısınız.</li>';
+    return;
+  }
   try {
     const reqHeaders = { "Accept": "application/json" };
     const token = localStorage.getItem('auth_token');
@@ -917,8 +953,8 @@ async function loadHistory() {
 
       li.innerHTML = `
         <div style="flex:1; overflow:hidden;">
-          <div class="history-item-title">${table.title}</div>
-          <div class="history-item-date">${dateStr}</div>
+          <div class="history-item-title">${escapeHTML(table.title)}</div>
+          <div class="history-item-date">${escapeHTML(dateStr)}</div>
         </div>
         <button class="history-item-delete" title="Sil">✖</button>
       `;
@@ -1202,15 +1238,8 @@ function setAuthMode(mode) {
   }
 }
 
-// Ziyaretçi Tablolarını Kaydet (LocalStorage)
-function addGuestTable(id) {
-  if (currentUser) return; // Zaten giriş yapmış
-  let tables = JSON.parse(localStorage.getItem('guest_table_ids') || '[]');
-  if (!tables.includes(id)) {
-    tables.push(id);
-    localStorage.setItem('guest_table_ids', JSON.stringify(tables));
-  }
-}
+// Ziyaretçi Tablolarını Kaydet (LocalStorage) fonksiyonu iptal edildi
+// Misafir verileri artık santiye_draft_table olarak tutuluyor.
 
 // Form Gönderimi (Login / Register / Forgot)
 UI.auth.submit.addEventListener('click', async () => {
@@ -1226,7 +1255,7 @@ UI.auth.submit.addEventListener('click', async () => {
 
   try {
     let endpoint = "";
-    let payload = { email, guest_table_ids };
+    let payload = { email };
 
     if (authMode === 'register') {
       endpoint = "/register";
@@ -1266,10 +1295,8 @@ UI.auth.submit.addEventListener('click', async () => {
     if (authMode === 'register') {
       UI.auth.success.textContent = data.message;
       UI.auth.success.classList.remove('hidden');
-      localStorage.removeItem('guest_table_ids'); // Aktarım tamam
     } else if (authMode === 'login') {
       localStorage.setItem('auth_token', data.data.token);
-      localStorage.removeItem('guest_table_ids');
       currentUser = data.data.user;
       currentUser.is_admin = data.data.is_admin;
       UI.auth.modal.classList.add('hidden');
@@ -1323,6 +1350,7 @@ async function logout() {
     await fetch(`${API_URL}/logout`, { method: "POST", headers: { 'Authorization': `Bearer ${token}` }});
   }
   localStorage.removeItem('auth_token');
+  localStorage.removeItem('santiye_draft_table'); // Güvenlik için çıkışta taslağı sil
   window.location.reload();
 }
 
@@ -1357,8 +1385,8 @@ function renderAdminUsers(users) {
     div.style.justifyContent = "space-between";
     div.innerHTML = `
       <div>
-        <strong>${u.name}</strong> ${u.is_admin ? '<span style="color:red">(Admin)</span>' : ''}<br>
-        <small style="color:var(--text-muted)">${u.email}</small>
+        <strong>${escapeHTML(u.name)}</strong> ${u.is_admin ? '<span style="color:red">(Admin)</span>' : ''}<br>
+        <small style="color:var(--text-muted)">${escapeHTML(u.email)}</small>
       </div>
       <div>
         <span class="badge" style="background:var(--primary); padding: 4px 8px; border-radius: 4px;">${u.tables_count} Tablo</span>
@@ -1390,8 +1418,8 @@ async function loadAdminUserTables(userId, userName) {
         const div = document.createElement("div");
         div.className = "history-item";
         div.innerHTML = `
-          <strong>${t.title}</strong><br>
-          <small>${new Date(t.created_at).toLocaleDateString()}</small>
+          <strong>${escapeHTML(t.title)}</strong><br>
+          <small>${escapeHTML(new Date(t.created_at).toLocaleDateString())}</small>
         `;
         div.onclick = () => {
           // Tabloyu ekranda göster

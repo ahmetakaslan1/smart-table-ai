@@ -12,22 +12,17 @@ class TableController extends Controller
 {
     /**
      * GET /api/tables
-     * Tüm kayıtlı tabloların listesini döndürür (satırlar olmadan, sadece başlıklar).
+     * Kullanıcının kendi tablolarını döndürür.
      */
     public function index(Request $request): JsonResponse
     {
-        // auth:sanctum middleware'i eklemediğimiz için manuel token kontrolü yapıyoruz.
-        // (Eğer route'ta middleware varsa $request->user() direkt gelir)
         $user = auth('sanctum')->user();
-
+        
+        // Admin tüm tabloları görebilir, normal kullanıcı sadece kendi tablolarını
         $query = HakedisTable::select('id', 'title', 'created_at', 'updated_at')->latest();
-
-        if ($user) {
-            // Giriş yapmışsa sadece kendi tablolarını görsün
+        
+        if (!$user->is_admin) {
             $query->where('user_id', $user->id);
-        } else {
-            // Ziyaretçiyse sadece anonim (user_id = null) tabloları görsün
-            $query->whereNull('user_id');
         }
 
         return response()->json([
@@ -38,7 +33,7 @@ class TableController extends Controller
 
     /**
      * POST /api/tables
-     * Yeni bir tabloyu başlığı, ham metni ve satırlarıyla birlikte kaydeder.
+     * Yeni bir tablo kaydeder (Sadece giriş yapmış kullanıcılar).
      */
     public function store(Request $request): JsonResponse
     {
@@ -58,7 +53,7 @@ class TableController extends Controller
         $table = HakedisTable::create([
             'title'     => $request->input('title', 'İsimsiz Hesap'),
             'raw_input' => $request->input('raw_input'),
-            'user_id'   => $user ? $user->id : null,
+            'user_id'   => $user->id,
         ]);
 
         $rowsToInsert = [];
@@ -82,10 +77,17 @@ class TableController extends Controller
 
     /**
      * GET /api/tables/{id}
-     * Belirli bir tabloyu satırlarıyla birlikte döndürür.
+     * Tablo detaylarını döndürür (IDOR Korumalı).
      */
     public function show(HakedisTable $table): JsonResponse
     {
+        $user = auth('sanctum')->user();
+        
+        // Sahiplik kontrolü
+        if ($table->user_id !== $user->id && !$user->is_admin) {
+            return response()->json(['success' => false, 'message' => 'Bu tabloyu görüntüleme yetkiniz yok.'], 403);
+        }
+
         return response()->json([
             'success' => true,
             'data'    => $table->load('rows'),
@@ -94,12 +96,13 @@ class TableController extends Controller
 
     /**
      * PUT /api/tables/{id}
-     * Kullanıcı manuel değişiklik yaptığında tabloyu ve satırlarını günceller.
+     * Tabloyu günceller (Sahiplik Korumalı).
      */
     public function update(Request $request, HakedisTable $table): JsonResponse
     {
         $user = auth('sanctum')->user();
-        if ($table->user_id !== null && (!$user || ($user->id !== $table->user_id && !$user->is_admin))) {
+        
+        if ($table->user_id !== $user->id && !$user->is_admin) {
             return response()->json(['success' => false, 'message' => 'Bu tabloyu düzenleme yetkiniz yok.'], 403);
         }
 
@@ -111,12 +114,10 @@ class TableController extends Controller
             'rows.required' => 'En az bir satır olmadan tabloyu kaydedemezsiniz.'
         ]);
 
-        // Başlığı güncelle
         if ($request->has('title')) {
             $table->update(['title' => $request->input('title')]);
         }
 
-        // Mevcut satırları sil, yeniden yaz (en basit ve güvenilir yaklaşım)
         $table->rows()->delete();
 
         $rowsToInsert = [];
@@ -142,16 +143,17 @@ class TableController extends Controller
 
     /**
      * DELETE /api/tables/{id}
-     * Tabloyu ve tüm satırlarını siler.
+     * Tabloyu siler (Sahiplik Korumalı).
      */
     public function destroy(HakedisTable $table): JsonResponse
     {
         $user = auth('sanctum')->user();
-        if ($table->user_id !== null && (!$user || ($user->id !== $table->user_id && !$user->is_admin))) {
+        
+        if ($table->user_id !== $user->id && !$user->is_admin) {
             return response()->json(['success' => false, 'message' => 'Bu tabloyu silme yetkiniz yok.'], 403);
         }
 
-        $table->delete(); // Cascade ile rows da silinir
+        $table->delete(); 
 
         return response()->json([
             'success' => true,

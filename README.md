@@ -40,13 +40,25 @@ Projeyi kendi bilgisayarınızda (lokalde) çalıştırmak için:
 1. **Projeyi indirin:**
    ```bash
    git clone https://github.com/ahmetakaslan1/smart-table-ai.git
+   cd smart-table-ai/santiye-test
    ```
-2. **Backend (API) Ayarları:**
-   Backend klasöründeki `.env.example` dosyasının adını `.env` olarak değiştirin ve içerisine Gemini API anahtarınızı ekleyin:
+2. **Backend (API) Kurulumu & Ayarları:**
+   ```bash
+   composer install
+   cp .env.example .env
+   php artisan key:generate
+   ```
+   `.env` dosyasını açıp veritabanı bilgilerinizi ve Gemini API anahtarınızı ekleyin:
    ```env
+   DB_DATABASE=veritabani_adiniz
    GEMINI_API_KEY=sizin_api_anahtariniz_buraya
+   FRONTEND_URL=http://localhost:5500 # Veya Frontend'in çalıştığı port
    ```
-3. **Sunucuyu Başlatın:**
+3. **Veritabanı Tablolarını Oluşturun:**
+   ```bash
+   php artisan migrate
+   ```
+4. **Sunucuyu Başlatın:**
    ```bash
    php artisan serve
    ```

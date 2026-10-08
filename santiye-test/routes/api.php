@@ -3,7 +3,8 @@
 use App\Http\Controllers\Api\GeminiController;
 use App\Http\Controllers\Api\TableController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,37 +12,14 @@ use Illuminate\Support\Facades\Artisan;
 |--------------------------------------------------------------------------
 */
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\AdminController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+// Auth Roteleri (throttle: 5 istek / dakika)
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/email/resend', [AuthController::class, 'resendVerification'])->middleware('throttle:5,1');
 
-// Auth Roteleri
-Route::get('/fix', function () {
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    \Illuminate\Support\Facades\Artisan::call('config:clear');
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-
-    // DB'ye girmeden Admin yap (Güvenlik için .env'den okur, Github'a gitmez)
-    $adminEmail = env('ADMIN_EMAIL');
-    if ($adminEmail) {
-        $user = \App\Models\User::where('email', $adminEmail)->first();
-        if ($user) {
-            $user->is_admin = true;
-            $user->save();
-        }
-    }
-
-    return 'Sistem onarıldı, önbellek temizlendi. (Admin atanacak mail varsa atandı)';
-});
-
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/email/resend', [AuthController::class, 'resendVerification']);
-
-// E-posta Doğrulama Rotası (Login zorunluluğu olmadan çalışacak şekilde uyarlandı)
+// E-posta Doğrulama Rotası
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash, \Illuminate\Http\Request $request) {
-    // Artık Frontend ve Backend farklı alan adlarında olduğu için, 
-    // doğrudan API alan adını değil, gerçek Frontend alan adını hedefliyoruz.
+    // Frontend ve Backend farklı alan adlarında olduğu için direkt Frontend URL'e yönlendir
     $frontendUrl = env('FRONTEND_URL', 'https://santiye.ahmetakaslan.com');
 
     if (! $request->hasValidSignature()) {
@@ -65,18 +43,22 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash, \Illuminate\Http\R
     return redirect($frontendUrl . '/?verified=success');
 })->name('verification.verify');
 
+// AI tablo üretici — Misafirler de kullanabilir ama throttle ile korunuyor
+// Sonucu DB'ye yazmaz, sadece JSON döner (store() auth arkasında)
+Route::post('/generate-table', [GeminiController::class, 'generateTable'])->middleware('throttle:10,1');
 
+// ============================================================
+// KİMLİK DOĞRULAMA GEREKTİREN ROTALAR
+// ============================================================
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/user',   [AuthController::class, 'user']);
 
     // Admin Roteleri
-    Route::get('/admin/users', [AdminController::class, 'users']);
-    Route::get('/admin/users/{id}/tables', [AdminController::class, 'userTables']);
+    Route::get('/admin/users',              [AdminController::class, 'users']);
+    Route::get('/admin/users/{id}/tables',  [AdminController::class, 'userTables']);
+
+    // Hakediş Tabloları CRUD
+    // Misafirler bu endpoint'lere ulaşamaz (401 alırlar) — localStorage'da tutulurlar
+    Route::apiResource('tables', TableController::class);
 });
-
-// AI tablo üretici
-Route::post('/generate-table', [GeminiController::class, 'generateTable']);
-
-// Hakediş tabloları CRUD
-Route::apiResource('tables', TableController::class);
